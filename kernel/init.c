@@ -75,6 +75,7 @@ enum init_level {
 #ifdef CONFIG_SMP
 	INIT_LEVEL_SMP,
 #endif
+	/* INIT_LEVEL_MANUAL only accessible via device_init */
 };
 
 #ifdef CONFIG_SMP
@@ -223,6 +224,51 @@ __pinned_bss
 bool z_sys_post_kernel;
 
 /**
+ * @brief Execute one init entry initialization function
+ *
+ * @details Invokes one initialization routine as created by the
+ * INIT_ENTRY_DEFINE() macro. Used by both automatic and manual
+ * init flows.
+ * @param entry init entry to run.
+ * @returns initialization function exit code
+ */
+static int z_sys_device_init(const struct init_entry* entry)
+{
+	const struct device *dev = entry->dev;
+	int rc = 0;
+
+	if (dev != NULL) {
+
+		if (entry->init_fn.dev != NULL) {
+			rc = entry->init_fn.dev(dev);
+			/* Mark device initialized. If initialization
+			 * failed, record the error condition.
+			 */
+			if (rc != 0) {
+				if (rc < 0) {
+					rc = -rc;
+				}
+				if (rc > UINT8_MAX) {
+					rc = UINT8_MAX;
+				}
+				dev->state->init_res = rc;
+			}
+		}
+
+		dev->state->initialized = true;
+
+		if (rc == 0) {
+			/* Run automatic device runtime enablement */
+			(void)pm_device_runtime_auto_enable(dev);
+		}
+	} else {
+		(void)entry->init_fn.sys();
+	}
+
+	return rc;
+}
+
+/**
  * @brief Execute all the init entry initialization functions at a given level
  *
  * @details Invokes the initialization routine for each init entry object
@@ -250,37 +296,40 @@ static void z_sys_init_run_level(enum init_level level)
 	const struct init_entry *entry;
 
 	for (entry = levels[level]; entry < levels[level+1]; entry++) {
-		const struct device *dev = entry->dev;
+		z_sys_device_init(entry);
+	}
+}
 
-		if (dev != NULL) {
-			int rc = 0;
+/**
+ * @brief Initialize one manual init device
+ *
+ * @details Invokes one device's initialization routine programmatically,
+ * for devices placed in the MANUAL init level.
+ * @param dev device whose init entry to run.
+ * @retval -EINVAL dev is NULL
+ * @retval -ENODEV device was not found
+ * @retval -EBUSY device was already initialized
+ * @returns initialization function exit code
+ */
+int device_init(const struct device *dev)
+{
+	int rc = -ENODEV;
+	const struct init_entry *entry;
 
-			if (entry->init_fn.dev != NULL) {
-				rc = entry->init_fn.dev(dev);
-				/* Mark device initialized. If initialization
-				 * failed, record the error condition.
-				 */
-				if (rc != 0) {
-					if (rc < 0) {
-						rc = -rc;
-					}
-					if (rc > UINT8_MAX) {
-						rc = UINT8_MAX;
-					}
-					dev->state->init_res = rc;
-				}
+	if (dev == NULL) {
+		rc = -EINVAL;
+	} else if (dev->state->initialized) {
+		rc = -EBUSY;
+	} else {
+		for (entry = __init_MANUAL_start; entry < __init_end ; entry++) {
+			if (entry->dev == dev) {
+				rc = z_sys_device_init(entry);
+				break;
 			}
-
-			dev->state->initialized = true;
-
-			if (rc == 0) {
-				/* Run automatic device runtime enablement */
-				(void)pm_device_runtime_auto_enable(dev);
-			}
-		} else {
-			(void)entry->init_fn.sys();
 		}
 	}
+
+	return rc;
 }
 
 extern void boot_banner(void);

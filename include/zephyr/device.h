@@ -738,6 +738,8 @@ static inline bool z_impl_device_is_ready(const struct device *dev)
 	return z_device_is_ready(dev);
 }
 
+int device_init(const struct device *dev);
+
 /**
  * @}
  */
