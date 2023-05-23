@@ -63,6 +63,7 @@ extern const struct init_entry __init_PRE_KERNEL_1_start[];
 extern const struct init_entry __init_PRE_KERNEL_2_start[];
 extern const struct init_entry __init_POST_KERNEL_start[];
 extern const struct init_entry __init_APPLICATION_start[];
+extern const struct init_entry __init_MANUAL_start[];
 extern const struct init_entry __init_end[];
 
 enum init_level {
@@ -243,8 +244,8 @@ static void z_sys_init_run_level(enum init_level level)
 #ifdef CONFIG_SMP
 		__init_SMP_start,
 #endif
-		/* End marker */
-		__init_end,
+		/* Stop at manual level inits */
+		__init_MANUAL_start,
 	};
 	const struct init_entry *entry;
 
