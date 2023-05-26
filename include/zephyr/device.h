@@ -887,6 +887,19 @@ int device_init(const struct device *dev);
 #define Z_DEVICE_SECTION_NAME(level, prio)                                     \
 	_CONCAT(INIT_LEVEL_ORD(level), _##prio)
 
+#if defined(CONFIG_HAS_DTS) || defined(__DOXYGEN__)
+/**
+ * @brief Returns device init level, unless overridden by @p manual-init in DT.
+ *
+ * @param node_id Devicetree node id for the device, if available
+ * @param level Requested initialization level
+ */
+#define Z_DEVICE_DT_INIT_LEVEL(node_id, level)				       \
+	COND_CODE_1(DT_PROP_OR(node_id, manual_init, 0), (MANUAL), (level))
+#else
+#define Z_DEVICE_DT_INIT_LEVEL(node_id, level) level
+#endif
+
 /**
  * @brief Define a @ref device
  *
@@ -954,10 +967,13 @@ int device_init(const struct device *dev);
                                                                                \
 	Z_DEVICE_HANDLES_DEFINE(node_id, dev_id, __VA_ARGS__);                 \
                                                                                \
-	Z_DEVICE_BASE_DEFINE(node_id, dev_id, name, pm, data, config, level,   \
+	Z_DEVICE_BASE_DEFINE(node_id, dev_id, name, pm, data, config,          \
+			     Z_DEVICE_DT_INIT_LEVEL(node_id, level),	       \
 			     prio, api, state, Z_DEVICE_HANDLES_NAME(dev_id)); \
                                                                                \
-	Z_DEVICE_INIT_ENTRY_DEFINE(dev_id, init_fn, level, prio)
+	Z_DEVICE_INIT_ENTRY_DEFINE(dev_id, init_fn,                            \
+				   Z_DEVICE_DT_INIT_LEVEL(node_id, level),     \
+				   prio)
 
 #if defined(CONFIG_HAS_DTS) || defined(__DOXYGEN__)
 /**

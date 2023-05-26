@@ -92,3 +92,7 @@ properties:
   mbox-names:
     type: string-array
     description: Provided names of mailbox / IPM channel specifiers
+
+  manual-init:
+    type: boolean
+    description: If the associated device needs to be manually init later
