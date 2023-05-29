@@ -1,0 +1,4 @@
+&uart4 {
+	status = "okay";
+	manual-init;
+};
