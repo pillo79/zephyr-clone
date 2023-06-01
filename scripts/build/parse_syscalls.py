@@ -33,6 +33,7 @@ import json
 regex_flags = re.MULTILINE | re.VERBOSE
 
 syscall_regex = re.compile(r'''
+\n\s*                                      # end of previous line + arbitrary whitespace
 (?:__syscall|__syscall_always_inline)\s+   # __syscall attribute, must be first
 ([^(]+)                                    # type and name of system call (split later)
 [(]                                        # Function opening parenthesis
