@@ -196,7 +196,7 @@ def wrapper_defs(func_name, func_type, args, fn):
     wrap = "extern %s z_impl_%s(%s);\n" % (func_type, func_name, decl_arglist)
     wrap += "\n"
     wrap += "__pinned_func\n"
-    wrap += "static inline %s %s(%s)\n" % (func_type, func_name, decl_arglist)
+    wrap += "__syscall %s %s(%s)\n" % (func_type, func_name, decl_arglist)
     wrap += "{\n"
     wrap += "#ifdef CONFIG_USERSPACE\n"
     wrap += ("\t" + "uint64_t ret64;\n") if ret64 else ""
