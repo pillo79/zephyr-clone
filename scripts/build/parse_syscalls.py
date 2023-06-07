@@ -35,7 +35,7 @@ regex_flags = re.MULTILINE | re.VERBOSE
 syscall_regex = re.compile(r'''
 \n\s*                                      # end of previous line + arbitrary whitespace
 (?:__syscall|__syscall_always_inline)\s+   # __syscall attribute, must be first
-([^(]+)                                    # type and name of system call (split later)
+([^(;]+)                                   # type and name of system call (split later)
 [(]                                        # Function opening parenthesis
 ([^)]*)                                    # Arg list (split later)
 [)]                                        # Closing parenthesis
@@ -93,6 +93,10 @@ def analyze_headers(multiple_directories):
                     sys.stderr.write("While parsing %s\n" % fn)
                     raise
 
+                if syscall_result:
+                    sys.stderr.write(">"+root+" "+fn+"\n")
+                    for entry in syscall_result:
+                        sys.stderr.write(str(entry)+"\n")
                 syscall_ret.extend(syscall_result)
 
     return syscall_ret, tagged_ret
