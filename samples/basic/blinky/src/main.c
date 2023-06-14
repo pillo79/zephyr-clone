@@ -57,8 +57,8 @@ int main(void)
 	int i=0;
 	ret = SetLed(0, 1);
 	while (1) {
-		static int st = 0;
-		st = !!st;
+		static int st = 1;
+		st = !st;
 		if (ret < 0) {
 			return 0;
 		}
