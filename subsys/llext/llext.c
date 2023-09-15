@@ -320,8 +320,8 @@ static int llext_count_export_syms(struct llext_loader *ldr)
 
 		name[sizeof(name) - 1] = '\0';
 
-		if (stt == STT_FUNC && stb == STB_GLOBAL) {
-			LOG_DBG("function symbol %d, name %s, type tag %d, bind %d, sect %d",
+		if (stb == STB_GLOBAL) {
+			LOG_DBG("exported symbol %d, name %s, type tag %d, bind %d, sect %d",
 				i, name, stt, stb, sect);
 			ldr->sym_cnt++;
 		} else {
@@ -384,7 +384,7 @@ static inline int llext_copy_symbols(struct llext_loader *ldr, struct llext *ext
 			goto out;
 		}
 
-		if (stt == STT_FUNC && stb == STB_GLOBAL && sect != SHN_UNDEF) {
+		if (stb == STB_GLOBAL && sect != SHN_UNDEF) {
 			ext->sym_tab.syms[j].name = k_heap_alloc(&llext_heap,
 							       sizeof(name),
 							       K_NO_WAIT);
@@ -392,8 +392,8 @@ static inline int llext_copy_symbols(struct llext_loader *ldr, struct llext *ext
 			ext->sym_tab.syms[j].addr =
 				(void *)((uintptr_t)ext->mem[ldr->sect_map[sym.st_shndx]]
 					 + sym.st_value);
-			LOG_DBG("function symbol %d name %s addr %p",
-				j, name, ext->sym_tab.syms[j].addr);
+			LOG_DBG("exported symbol %d name %s addr %p (sect %d + 0x%x)",
+				j, name, ext->sym_tab.syms[j].addr, ldr->sect_map[sym.st_shndx], sym.st_value);
 			j++;
 		}
 	}
@@ -517,13 +517,14 @@ static int llext_link(struct llext_loader *ldr, struct llext *ext)
 					LOG_INF("found symbol %s at 0x%lx, updating op code 0x%lx",
 						name, link_addr, op_code);
 				}
-			} else if (ELF_ST_TYPE(sym.st_info) == STT_SECTION) {
+			} else if (sym.st_shndx == SHN_ABS) {
+				link_addr = 0;
+
+				LOG_INF("symbol %s is absolute", name);
+			} else {
 				link_addr = (uintptr_t)ext->mem[ldr->sect_map[sym.st_shndx]];
 
-				LOG_INF("found section symbol %s addr 0x%lx", name, link_addr);
-			} else {
-				/* Nothing to relocate here */
-				continue;
+				LOG_INF("found symbol %s in section %d base addr 0x%lx", name, ldr->sect_map[sym.st_shndx], link_addr);
 			}
 
 			op_loc = loc + rel.r_offset;
