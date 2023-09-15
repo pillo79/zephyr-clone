@@ -205,7 +205,7 @@ static int llext_load_rel(struct llext_loader *ldr, struct llext *ext)
 	elf_sym_t sym;
 	size_t ent_size = ldr->sects[LLEXT_SECT_SYMTAB].sh_entsize;
 	size_t syms_size = ldr->sects[LLEXT_SECT_SYMTAB].sh_size;
-	size_t func_syms_cnt = 0;
+	size_t exp_syms_cnt = 0;
 
 	pos = ldr->sects[LLEXT_SECT_SYMTAB].sh_offset;
 	sym_cnt = syms_size / sizeof(elf_sym_t);
@@ -224,21 +224,21 @@ static int llext_load_rel(struct llext_loader *ldr, struct llext *ext)
 		llext_seek(ldr, ldr->sects[LLEXT_SECT_STRTAB].sh_offset + sym.st_name);
 		llext_read(ldr, name, sizeof(name));
 
-		if (stt == STT_FUNC && stb == STB_GLOBAL) {
-			LOG_DBG("function symbol %d, name %s, type tag %d, bind %d, sect %d",
+		if (stb == STB_GLOBAL) {
+			LOG_DBG("exported symbol %d, name %s, type tag %d, bind %d, sect %d",
 				i, name, stt, stb, sect);
-			func_syms_cnt++;
+			exp_syms_cnt++;
 		} else {
 			LOG_DBG("unhandled symbol %d, name %s, type tag %d, bind %d, sect %d",
 				i, name, stt, stb, sect);
 		}
 	}
 
-	/* Copy over global function symbols to symtab */
+	/* Copy over global symbols to symtab */
 
-	ext->sym_tab.syms = k_heap_alloc(&llext_heap, func_syms_cnt * sizeof(struct llext_symbol),
+	ext->sym_tab.syms = k_heap_alloc(&llext_heap, exp_syms_cnt * sizeof(struct llext_symbol),
 				       K_NO_WAIT);
-	ext->sym_tab.sym_cnt = func_syms_cnt;
+	ext->sym_tab.sym_cnt = exp_syms_cnt;
 	pos = ldr->sects[LLEXT_SECT_SYMTAB].sh_offset;
 	j = 0;
 	for (i = 0; i < sym_cnt; i++) {
@@ -253,7 +253,7 @@ static int llext_load_rel(struct llext_loader *ldr, struct llext *ext)
 		llext_seek(ldr, ldr->sects[LLEXT_SECT_STRTAB].sh_offset + sym.st_name);
 		llext_read(ldr, name, sizeof(name));
 
-		if (stt == STT_FUNC && stb == STB_GLOBAL && sect != SHN_UNDEF) {
+		if (stb == STB_GLOBAL && sect != SHN_UNDEF) {
 			size_t name_sz = sizeof(name);
 
 			ext->sym_tab.syms[j].name = k_heap_alloc(&llext_heap,
@@ -263,8 +263,8 @@ static int llext_load_rel(struct llext_loader *ldr, struct llext *ext)
 			ext->sym_tab.syms[j].addr =
 				(void *)((uintptr_t)ext->mem[ldr->sect_map[sym.st_shndx]]
 					 + sym.st_value);
-			LOG_DBG("function symbol %d name %s addr %p",
-				j, name, ext->sym_tab.syms[j].addr);
+			LOG_DBG("exported symbol %d name %s addr %p (sect %d + 0x%x)",
+				j, name, ext->sym_tab.syms[j].addr, ldr->sect_map[sym.st_shndx], sym.st_value);
 			j++;
 		}
 	}
@@ -343,13 +343,14 @@ static int llext_load_rel(struct llext_loader *ldr, struct llext *ext)
 					LOG_INF("found symbol %s at 0x%lx, updating op code 0x%lx",
 						name, link_addr, op_code);
 				}
-			} else if (ELF_ST_TYPE(sym.st_info) == STT_SECTION) {
+			} else if (sym.st_shndx == SHN_ABS) {
+				link_addr = 0;
+
+				LOG_INF("symbol %s is absolute", name);
+			} else {
 				link_addr = (uintptr_t)ext->mem[ldr->sect_map[sym.st_shndx]];
 
-				LOG_INF("found section symbol %s addr 0x%lx", name, link_addr);
-			} else {
-				/* Nothing to relocate here */
-				continue;
+				LOG_INF("found symbol %s in section %d base addr 0x%lx", name, ldr->sect_map[sym.st_shndx], link_addr);
 			}
 
 			op_loc = loc + rel.r_offset;
