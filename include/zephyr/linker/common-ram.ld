@@ -138,10 +138,6 @@
 	ITERABLE_SECTION_RAM(zbus_channel_observation_mask, 1)
 #endif /* CONFIG_ZBUS */
 
-#ifdef CONFIG_LLEXT
-	ITERABLE_SECTION_RAM(llext_symbol, 4)
-#endif /* CONFIG_LLEXT */
-
 #ifdef CONFIG_USERSPACE
 	_static_kernel_objects_end = .;
 #endif
