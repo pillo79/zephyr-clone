@@ -56,9 +56,9 @@ struct llext_symtable {
  *
  * @param x Symbol to export
  */
-#define EXPORT_SYMBOL(x)					\
-	STRUCT_SECTION_ITERABLE(llext_symbol, x ## _sym) = {	\
-		.name = STRINGIFY(x), .addr = x,		\
+#define EXPORT_SYMBOL(x)							\
+	static const STRUCT_SECTION_ITERABLE(llext_symbol, x ## _sym) = {	\
+		.name = STRINGIFY(x), .addr = x,				\
 	}
 
 /**
