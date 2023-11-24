@@ -228,7 +228,7 @@ The full list of registered objects and resource IDs can be found in the
 Zephyr's LwM2M library lives in the :zephyr_file:`subsys/net/lib/lwm2m`, with a
 client sample in :zephyr_file:`samples/net/lwm2m_client`.  For more information
 about the provided sample see: :zephyr:code-sample:`lwm2m-client`. The sample can be
-configured to use normal unsecure network sockets or sockets secured via DTLS.
+configured to use normal insecure network sockets or sockets secured via DTLS.
 
 The Zephyr LwM2M library implements the following items:
 
@@ -499,7 +499,7 @@ Enabling and configuring
 
 Enable data cache by selecting :kconfig:option:`CONFIG_LWM2M_RESOURCE_DATA_CACHE_SUPPORT`.
 Application needs to allocate an array of :c:struct:`lwm2m_time_series_elem` structures and then
-enable the cache by calling :c:func:`lwm2m_engine_enable_cache` for a given resource. Earch resource
+enable the cache by calling :c:func:`lwm2m_engine_enable_cache` for a given resource. Each resource
 must be enabled separately and each resource needs their own storage.
 
 .. code-block:: c

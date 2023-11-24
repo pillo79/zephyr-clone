@@ -199,7 +199,7 @@ A device-specific API definition typically looks like this:
    /* When extensions need not be invoked from user mode threads */
    int specific_do_that(const struct device *dev, int foo);
 
-   /* When extensions must be invokable from user mode threads */
+   /* When extensions must be invocable from user mode threads */
    __syscall int specific_from_user(const struct device *dev, int bar);
 
    /* Only needed when extensions include syscalls */
